@@ -183,6 +183,78 @@
             <button id="sendButton" onclick="sendMessage()"></button>
         </div>
     </div>
+    <script>
+        function sendMessage() {
+            let userInput = document.getElementById("userInput");
+            let message = userInput.value.trim();
+            if (message === "") return;
 
+            appendMessage("user", message);
+            userInput.value = "";
+
+            let typingIndicator = document.createElement("div");
+            typingIndicator.classList.add("typing");
+            typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+            document.getElementById("chatBody").appendChild(typingIndicator);
+
+            fetch("/get", {
+                method: "POST",
+                body: new URLSearchParams({msg: message}),
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById("chatBody").removeChild(typingIndicator);
+                typeMessage("bot", data.replace(/^\{"answer":"|"\}$/g, ''));
+            });
+        }
+
+        function appendMessage(sender, message) {
+            let chatBody = document.getElementById("chatBody");
+            let msgDiv = document.createElement("div");
+            msgDiv.classList.add("message", sender === "user" ? "user-message" : "bot-message");
+            msgDiv.innerText = message;
+            chatBody.appendChild(msgDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function typeMessage(sender, message) {
+    let chatBody = document.getElementById("chatBody");
+    let msgDiv = document.createElement("div");
+    msgDiv.classList.add("message", sender === "bot" ? "bot-message" : "user-message");
+    chatBody.appendChild(msgDiv);
+
+    let index = 0;
+    let cursor = " |"; // Blinking cursor effect
+    let interval = setInterval(() => {
+        msgDiv.innerText = message.substring(0, index) + cursor;
+        index++;
+        if (index > message.length) {
+            clearInterval(interval);
+            msgDiv.innerText = message; // Remove cursor after typing
+        }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }, 50);
+}
+
+        function showTypingIndicator() {
+            let chatBody = document.getElementById("chatBody");
+            let typingDiv = document.createElement("div");
+            typingDiv.classList.add("message", "bot-message");
+            typingDiv.id = "typingIndicator";
+            typingDiv.innerHTML = "<div class='typing-indicator'><span></span><span></span><span></span></div>";
+            chatBody.appendChild(typingDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            let typingDiv = document.getElementById("typingIndicator");
+            if (typingDiv) typingDiv.remove();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") sendMessage();
+        }
+    </script>
 </body>
 </html>
